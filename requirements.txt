@@ -1,0 +1,13 @@
+# ==============================================================================
+# Maritime AI Sentinel - Production Requirements for Render.com
+# ==============================================================================
+
+# Fast, lightweight CPU-optimized PyTorch (avoids 2.5GB CUDA download on Render)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0
+
+# Core Scientific Computing & Matrix Operations
+numpy>=1.24.0
+
+# Optional High-Performance ASGI / WSGI Server (if using gunicorn/uvicorn)
+# gunicorn>=21.2.0

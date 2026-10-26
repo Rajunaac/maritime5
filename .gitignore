@@ -1,0 +1,57 @@
+# ==============================================================================
+# Git Ignore Configuration for Maritime AI Sentinel
+# Prevents large data files (>100MB) from blocking GitHub and Render deployment
+# ==============================================================================
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Large Training & Test Datasets (exceeds GitHub 100MB limit)
+*.7z
+*.zip
+*.tar.gz
+*.tar
+*.gz
+data/
+**/data/
+*.npz
+*.npy
+
+# Heavy Experimental Model Weights (>100MB)
+# Note: best_custom_cnn.pth is only ~970KB and is included for live inference
+*resnet50*
+*densenet121*
+*efficientnet*
+*mobilenet*
+*.pth
+!best_custom_cnn.pth
+!**/best_custom_cnn.pth
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# IDE and Operating System artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Antigravity & local test logs
+.system_generated/
+*.log

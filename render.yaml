@@ -1,0 +1,33 @@
+# ==============================================================================
+# Render Blueprint Configuration (render.yaml)
+# Docs: https://render.com/docs/blueprint-spec
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # Production Web Service: Python AI Simulator + Real-Time REST APIs + Web UI
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: maritime-ai-threat-monitor
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /api/status
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PORT
+        value: 10000
+
+  # ----------------------------------------------------------------------------
+  # (Optional) Ultra-Fast Static Site: Free Global CDN for Frontend Only
+  # To use static site instead, deploy this service in Render Dashboard
+  # ----------------------------------------------------------------------------
+  # - type: static
+  #   name: maritime-ai-static-ui
+  #   buildCommand: echo "Static assets ready"
+  #   publishDir: .
+  #   autoDeploy: true

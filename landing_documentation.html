@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maritime AI Threat Detection for Moving Ships</title>
+  <meta name="description" content="Maritime AI Threat Detection platform implementing the 20-section specification: Sentinel-1 SAR classification, cyclone trajectory forecasting, CPA/TCPA threat evaluation, dynamic A* routing, and MarineChain PoAh cyber-resilience.">
+  <meta name="keywords" content="Maritime AI, Moving Ships, SAR Classification, Cyclone Prediction, CPA TCPA, Dynamic Routing, MarineChain, PoAh, Kalman Filter, Statoil C-CORE">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Leaflet Nautical Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- Project Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Leaflet Nautical Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Pre-extracted Real Statoil SAR Samples -->
+  <script src="assets/samples.js"></script>
+</head>
+<body>
+
+  <!-- Ambient Grid Background -->
+  <div class="bg-grid-ambient"></div>
+
+  <!-- ==========================================================================
+       NAVIGATION & TOP HUD BAR
+       ========================================================================== -->
+  <header class="nav-header">
+    <div class="container nav-inner">
+      <a href="#hero" class="brand-wrapper">
+        <div class="radar-logo">
+          <div class="radar-sweep"></div>
+          <div class="radar-core"></div>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">MARITIME AI SENTINEL</span>
+          <span class="brand-sub">THREAT DETECTION & CYBER-RESILIENT NAVIGATION</span>
+        </div>
+      </a>
+
+      <nav>
+        <ul class="nav-menu">
+          <li><a href="#patent-fig1" class="nav-link highlight" style="color:var(--cyan-primary);font-weight:700;"><span class="num">FIG.1</span>Patent Architecture</a></li>
+          <li><a href="#patent-algorithm" class="nav-link"><span class="num">FIG.2</span>Patent Algorithm</a></li>
+          <li><a href="#threat-hud" class="nav-link"><span class="num">01</span>Threat HUD</a></li>
+          <li><a href="#pipeline" class="nav-link"><span class="num">02</span>Multimodal Loop</a></li>
+          <li><a href="#sar-ai" class="nav-link"><span class="num">03</span>SAR AI</a></li>
+          <li><a href="#routing" class="nav-link"><span class="num">04</span>A* Routing</a></li>
+          <li><a href="#marinechain" class="nav-link"><span class="num">05</span>MarineChain</a></li>
+          <li><a href="#benchmarks" class="nav-link"><span class="num">06</span>Benchmarks</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <div class="status-pill">
+          <div class="pulse-dot"></div>
+          <span>SAFETY LOOP: LOCAL (&lt;18ms)</span>
+        </div>
+        <a href="#threat-hud" class="btn-tactical btn-cyan">Live Console</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       HERO SECTION
+       ========================================================================== -->
+  <section id="hero" class="hero-section">
+    <div class="hero-canvas-bg">
+      <canvas id="heroRadarCanvas"></canvas>
+    </div>
+
+    <div class="container hero-grid">
+      <div class="hero-text-content">
+        <div class="hero-badge-group">
+          <span class="badge-tag cyan">MULTIMODAL FUSION ARCHITECTURE</span>
+          <span class="badge-tag">CYCLONE LSTM TRAJECTORY FORECASTING</span>
+          <span class="badge-tag">HAVERSINE CPA/TCPA RISK ENGINE</span>
+          <span class="badge-tag purple">POAH BLOCKCHAIN CYBER-RESILIENCE</span>
+        </div>
+
+        <h1 class="hero-title">
+          MARITIME AI THREAT DETECTION
+          <span class="glow-cyan">FOR MOVING SHIPS</span>
+        </h1>
+
+        <p class="hero-description">
+          An end-to-end cyber-physical safety platform embedding deep learning into real-time maritime operations: Sentinel-1 SAR dual-polarization iceberg classification, sequence-based cyclone trajectory forecasting, dynamic A* Great-Circle weather routing, and decentralized Proof-of-Authentication telemetry audit.
+        </p>
+
+        <div class="hero-cta-group">
+          <a href="#threat-hud" class="btn-tactical btn-cyan">
+            <span>Explore Threat Monitor</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#sar-ai" class="btn-tactical btn-outline">
+            <span>SAR Radar Studio</span>
+          </a>
+          <a href="#marinechain" class="btn-tactical btn-outline">
+            <span>MarineChain / PoAh</span>
+          </a>
+          <a href="#roadmap" class="btn-tactical btn-outline">
+            <span>20-Step Roadmap</span>
+          </a>
+        </div>
+
+        <!-- Hero Metric Counters -->
+        <div class="hero-stats-row">
+          <div class="stat-item">
+            <span class="stat-val cyan">86.29%</span>
+            <span class="stat-lbl">SAR Accuracy</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val emerald">0.2995</span>
+            <span class="stat-lbl">Top Log Loss</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val cyan">99.1%</span>
+            <span class="stat-lbl">Hazard Avoidance</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val amber">98.6%</span>
+            <span class="stat-lbl">Tamper Detection</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Real-Time Terminal HUD Card -->
+      <div class="hero-terminal-card">
+        <div class="card-hud-head">
+          <span class="hud-title-text">REAL-TIME THREAT DETECTION STATE</span>
+          <div class="hud-dots">
+            <span class="red"></span>
+            <span class="yellow"></span>
+            <span class="green"></span>
+          </div>
+        </div>
+
+        <div class="terminal-telemetry-grid">
+          <div class="telem-cell">
+            <span class="key">VESSEL STATE (S_t)</span>
+            <span class="val emerald">MV ARCTIC SENTINEL</span>
+          </div>
+          <div class="telem-cell">
+            <span class="key">ICEBERG THREAT (I_t)</span>
+            <span class="val cyan">ICE-7801 [P=0.984]</span>
+          </div>
+          <div class="telem-cell">
+            <span class="key">CYCLONE STATE (C_t)</span>
+            <span class="val crimson">BOREAL TEMPEST [85 kts]</span>
+          </div>
+          <div class="telem-cell">
+            <span class="key">ENCOUNTER GEOMETRY</span>
+            <span class="val">CPA 51.4 NM | TCPA 14.2h</span>
+          </div>
+        </div>
+
+        <div class="hud-radar-mini">
+          <canvas id="miniRadarCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ==========================================================================
+       PATENT EMBODIMENT: FULL SYSTEM ARCHITECTURE & PROCESS FLOW (FIG. 1 & FIG. 2)
+       ========================================================================== -->
+  <section id="patent-fig1" class="project-section patent-master-section">
+    <div class="container">
+      
+      <!-- Patent Master Header -->
+      <div class="section-head text-center">
+        <div class="patent-official-badge">
+          <span class="badge-icon">🏛️</span>
+          <span>OFFICIAL PATENT SPECIFICATION EMBODIMENT &bull; FIGURE 1 & FIGURE 2</span>
+        </div>
+        <h2 class="section-title">
+          PATENT SYSTEM ARCHITECTURE: <span class="cyan">MARITIME AI THREAT DETECTION</span>
+        </h2>
+        <p class="section-desc" style="max-width:960px;margin:0 auto;">
+          Direct visual embodiment of <b>Patent Application FIG. 1</b> (Multimodal System Architecture &amp; Operational Theater) and <b>FIG. 2</b> (Decision &amp; Avoidance Algorithm Flowchart). Integrating Sentinel-1 SAR Deep Learning, Cyclone Sequential Tracking, CPA/TCPA Multi-Hazard Risk Assessment, Dynamic A* Great-Circle Avoidance, and MarineChain Proof-of-Authentication (PoAh).
+        </p>
+
+        <!-- View Switcher Tabs -->
+        <div class="patent-view-tabs">
+          <button class="patent-tab-btn active" data-tab="fig1" onclick="window.switchPatentTab('fig1')">
+            <span>🖼️ FIGURE 1: Full System Architecture &amp; Theater</span>
+          </button>
+          <button class="patent-tab-btn" data-tab="fig2" onclick="window.switchPatentTab('fig2')">
+            <span>⚙️ FIGURE 2: Decision Algorithm Flowchart</span>
+          </button>
+          <button class="patent-tab-btn" data-tab="both" onclick="window.switchPatentTab('both')">
+            <span>📐 Side-by-Side Blueprint Mode</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: FIGURE 1 EXHIBIT -->
+      <div id="patentFig1View" class="patent-view-container active">
+        <div class="patent-figure-card">
+          <div class="patent-figure-topbar">
+            <div class="fig-label">
+              <span class="fig-num">FIGURE 1</span>
+              <span class="fig-sub">Complete Multimodal Threat Detection, Operational Theater &amp; Dataflow Engine</span>
+            </div>
+            <div class="fig-actions">
+              <button class="btn-patent-zoom" onclick="window.openPatentLightbox('assets/images/maritime patent image1.png', 'Patent Specification FIG. 1', 'Comprehensive Multimodal Architecture: Data Acquisition, AI Hazard Detection, Risk Assessment, Dynamic Route Planning, Real-Time Alerts, and MarineChain PoAh Record.')">
+                <span>🔍 Inspect High-Res (100% Zoom)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Figure 1 Image Frame -->
+          <div class="patent-image-frame" onclick="window.openPatentLightbox('assets/images/maritime patent image1.png', 'Patent Specification FIG. 1', 'Comprehensive Multimodal Architecture: Data Acquisition, AI Hazard Detection, Risk Assessment, Dynamic Route Planning, Real-Time Alerts, and MarineChain PoAh Record.')">
+            <img src="assets/images/maritime patent image1.png" alt="Maritime Patent System Architecture Figure 1" class="patent-full-image" id="patentImage1">
+            <div class="image-zoom-hint">Click image to expand in full-screen interactive lightbox</div>
+          </div>
+        </div>
+
+        <!-- ====================================================================
+             INTERACTIVE RECONSTRUCTION OF FIG. 1 TOP WORKFLOW PIPELINE (6 BLOCKS)
+             ==================================================================== -->
+        <div class="patent-pipeline-interactive">
+          <div class="patent-pipeline-title-strip">
+            <h3>FIG. 1 &bull; END-TO-END OPERATIONAL WORKFLOW PIPELINE</h3>
+            <span class="strip-badge">6 SYNCHRONIZED PHASES</span>
+          </div>
+
+          <div class="patent-pipeline-flow">
+            <!-- 1. Data Acquisition -->
+            <div class="patent-stage-card stage-blue">
+              <div class="stage-header">Data Acquisition</div>
+              <div class="stage-body">
+                <div class="stage-item"><span class="item-icon">🛰️</span><span>Satellite (SAR)</span></div>
+                <div class="stage-item"><span class="item-icon">📡</span><span>Weather Data (Cyclone Information)</span></div>
+                <div class="stage-item"><span class="item-icon">🚢</span><span>Vessel Data (AIS/GNSS)</span></div>
+                <div class="stage-item"><span class="item-icon">🗄️</span><span>Navigation Charts &amp; Historical Data</span></div>
+              </div>
+            </div>
+
+            <div class="patent-flow-arrow">➔</div>
+
+            <!-- 2. AI-Based Hazard Detection -->
+            <div class="patent-stage-card stage-green">
+              <div class="stage-header">AI-Based Hazard Detection and Prediction</div>
+              <div class="stage-body">
+                <div class="stage-subbox">
+                  <span class="subbox-title">Iceberg Detection</span>
+                  <span class="subbox-meta">(SAR + Deep Learning)</span>
+                  <div class="mini-scan-preview ice">
+                    <span class="scan-target-box">ICE-7801</span>
+                  </div>
+                </div>
+                <div class="stage-subbox">
+                  <span class="subbox-title">Cyclone Tracking &amp; Prediction</span>
+                  <span class="subbox-meta">(Sequential AI Model)</span>
+                  <div class="mini-scan-preview storm">
+                    <span class="scan-vortex-icon">🌀</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="patent-flow-arrow">➔</div>
+
+            <!-- 3. Risk Assessment -->
+            <div class="patent-stage-card stage-amber">
+              <div class="stage-header">Risk Assessment</div>
+              <div class="stage-body">
+                <ul class="stage-bullet-list">
+                  <li>Hazard Probability</li>
+                  <li>Vessel-to-Hazard Distance</li>
+                  <li>Closest Point of Approach (CPA)</li>
+                  <li>Time to Closest Point of Approach (TCPA)</li>
+                  <li>Multi-Hazard Risk Fusion (Iceberg, Cyclone, Cyber)</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="patent-flow-arrow">➔</div>
+
+            <!-- 4. Dynamic Route Planning -->
+            <div class="patent-stage-card stage-purple">
+              <div class="stage-header">Dynamic Route Planning</div>
+              <div class="stage-body">
+                <div class="route-mini-graphic">
+                  <svg viewBox="0 0 160 80" class="mini-route-svg">
+                    <!-- Hazard Circle -->
+                    <circle cx="105" cy="45" r="24" fill="rgba(255, 23, 68, 0.22)" stroke="#ff1744" stroke-width="1.5" stroke-dasharray="3,3"/>
+                    <text x="105" y="47" fill="#ff1744" font-size="8" text-anchor="middle" font-weight="700">HAZARD</text>
+                    <!-- Nominal Route Green Dashed -->
+                    <path d="M 15,60 C 50,45 80,45 145,20" fill="none" stroke="#00e676" stroke-width="2.5" stroke-dasharray="5,4"/>
+                    <!-- Safe Route Red Solid -->
+                    <path d="M 15,60 C 45,65 75,70 110,68 C 130,66 140,40 145,20" fill="none" stroke="#ff1744" stroke-width="3"/>
+                    <!-- Ship -->
+                    <circle cx="15" cy="60" r="4" fill="#00e5ff"/>
+                  </svg>
+                  <div class="route-graphic-legend">
+                    <div><span class="leg-dash green"></span>Nominal Route</div>
+                    <div><span class="leg-line red"></span>Safe Avoidance (A*)</div>
+                    <div><span class="leg-circle pink"></span>Hazard Region</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="patent-flow-arrow">➔</div>
+
+            <!-- 5. Alert & Visualization -->
+            <div class="patent-stage-card stage-red">
+              <div class="stage-header">Alert &amp; Visualization</div>
+              <div class="stage-body">
+                <div class="stage-item"><span class="item-icon">⚠️</span><span>Real-Time Alerts</span></div>
+                <div class="stage-item"><span class="item-icon">🖥️</span><span>Interactive Map &amp; Dashboard</span></div>
+                <div class="stage-item"><span class="item-icon">📊</span><span>Threat Levels (Ice, Cyclone, Cyber)</span></div>
+                <div class="stage-item"><span class="item-icon">📍</span><span>Recommended Safe Route</span></div>
+              </div>
+            </div>
+
+            <div class="patent-flow-arrow">➔</div>
+
+            <!-- 6. Secure Communication & Record -->
+            <div class="patent-stage-card stage-teal">
+              <div class="stage-header">Secure Communication &amp; Record</div>
+              <div class="stage-body">
+                <div class="marinechain-logo-badge">
+                  <div class="hex-nodes">⬡—⬢—⬡</div>
+                  <div class="marinechain-text">MarineChain</div>
+                  <div class="marinechain-sub">(Proof-of-Authentication)</div>
+                </div>
+                <ul class="stage-bullet-list">
+                  <li>Record Threat Information</li>
+                  <li>Authenticate Data</li>
+                  <li>Ensure Integrity</li>
+                  <li>Traceability and Auditability</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====================================================================
+             INTERACTIVE RECONSTRUCTION OF FIG. 1 BOTTOM TECHNICAL DATAFLOW (6 STAGES)
+             ==================================================================== -->
+        <div class="patent-dataflow-interactive">
+          <div class="patent-pipeline-title-strip">
+            <h3>FIG. 1 &bull; MODULAR TECHNICAL DATAFLOW ARCHITECTURE</h3>
+            <span class="strip-badge">MATHEMATICAL CORE</span>
+          </div>
+
+          <div class="patent-dataflow-grid">
+            <!-- 1. Input Data -->
+            <div class="dataflow-card df-blue">
+              <div class="df-card-header">Input Data</div>
+              <div class="df-card-body">
+                <div class="df-thumb-grid">
+                  <div class="df-thumb-box">
+                    <div class="thumb-icon">🧊</div>
+                    <span class="thumb-lbl">SAR Imagery</span>
+                  </div>
+                  <div class="df-thumb-box">
+                    <div class="thumb-icon">🌀</div>
+                    <span class="thumb-lbl">Cyclone Data</span>
+                  </div>
+                  <div class="df-thumb-box">
+                    <div class="thumb-icon">🚢</div>
+                    <span class="thumb-lbl">Vessel Data (AIS/GNSS)</span>
+                  </div>
+                  <div class="df-thumb-box">
+                    <div class="thumb-icon">🗺️</div>
+                    <span class="thumb-lbl">Navigation Charts</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="patent-flow-arrow">➔</div>
+
+            <!-- 2. AI Models -->
+            <div class="dataflow-card df-green">
+              <div class="df-card-header">AI Models</div>
+              <div class="df-card-body">
+                <div class="df-pill">
+                  <b>Iceberg Detection</b>
+                  <span>(CNN / Transformer)</span>
+                </div>
+                <div class="df-pill">
+                  <b>Cyclone Prediction</b>
+                  <span>(LSTM / Transformer)</span>
+                </div>
+                <div class="df-pill">
+                  <b>Cyber Threat Detection</b>
+                  <span>(Anomaly Detection)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="patent-flow-arrow">➔</div>
+
+            <!-- 3. Threat Engine -->
+            <div class="dataflow-card df-amber">
+              <div class="df-card-header">Threat Engine</div>
+              <div class="df-card-body">
+                <div class="df-pill warning">
+                  <span>Iceberg Risk (R<sub>I</sub>)</span>
+                </div>
+                <div class="df-pill warning">
+                  <span>Cyclone Risk (R<sub>C</sub>)</span>
+                </div>
+                <div class="df-pill warning">
+                  <span>Cyber Risk (R<sub>cyber</sub>)</span>
+                </div>
+                <div class="df-pill danger highlight">
+                  <b>Combined Risk (R<sub>total</sub>)</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="patent-flow-arrow">➔</div>
+
+            <!-- 4. Route Optimization -->
+            <div class="dataflow-card df-purple">
+              <div class="df-card-header">Route Optimization</div>
+              <div class="df-card-body">
+                <div class="df-pill active">
+                  <b>A* Algorithm</b>
+                </div>
+                <div class="route-thumb-preview">
+                  <div class="route-deflection-indicator">
+                    <span>Deflection Buffer: +45 NM</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="patent-flow-arrow">➔</div>
+
+            <!-- 5. MarineChain - PoAh -->
+            <div class="dataflow-card df-cyan">
+              <div class="df-card-header">MarineChain - PoAh</div>
+              <div class="df-card-body">
+                <div class="ledger-header-box">
+                  <span class="doc-icon">📑</span>
+                  <b>Threat Event Ledger</b>
+                </div>
+                <ul class="df-ledger-list">
+                  <li>Vessel ID &amp; Coordinates</li>
+                  <li>CPA / TCPA</li>
+                  <li>Risk Level</li>
+                  <li>ML Trust Score</li>
+                  <li>Validator (HAPS/Ground)</li>
+                  <li>Cryptographic Hash</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="patent-flow-arrow">➔</div>
+
+            <!-- 6. Outputs -->
+            <div class="dataflow-card df-pink">
+              <div class="df-card-header">Outputs</div>
+              <div class="df-card-body">
+                <div class="output-item"><span class="out-icon danger">⚠️</span><span>Threat Alerts</span></div>
+                <div class="output-item"><span class="out-icon success">📍</span><span>Recommended Route</span></div>
+                <div class="output-item"><span class="out-icon info">📊</span><span>Threat Scores</span></div>
+                <div class="output-item"><span class="out-icon purple">📑</span><span>Blockchain Record</span></div>
+                <div class="output-item"><span class="out-icon cyan">🖥️</span><span>Dashboard Visualization</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: FIGURE 2 ALGORITHM EXHIBIT -->
+      <div id="patentFig2View" class="patent-view-container" style="display:none;">
+        <div class="patent-figure-card">
+          <div class="patent-figure-topbar">
+            <div class="fig-label">
+              <span class="fig-num">FIGURE 2</span>
+              <span class="fig-sub">Complete Patent Decision &amp; Collision Avoidance Algorithm Flowchart</span>
+            </div>
+            <div class="fig-actions">
+              <button class="btn-patent-zoom" onclick="window.openPatentLightbox('assets/images/maritime patent algorithm.png', 'Patent Specification FIG. 2', 'Complete Decision and Avoidance Algorithm: From Vessel Registration, Sensor Ingestion, Multi-Hazard Risk Classification, High-Risk Decision Diamond, to A* Recalculation.')">
+                <span>🔍 Inspect High-Res (100% Zoom)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="patent-algo-grid">
+            <div class="patent-image-frame algo-frame" onclick="window.openPatentLightbox('assets/images/maritime patent algorithm.png', 'Patent Specification FIG. 2', 'Complete Decision and Avoidance Algorithm Flowchart.')">
+              <img src="assets/images/maritime patent algorithm.png" alt="Maritime Patent Algorithm Flowchart Figure 2" class="patent-full-image" id="patentImage2">
+              <div class="image-zoom-hint">Click flowchart to zoom</div>
+            </div>
+
+            <!-- Interactive Algorithm Step Execution Tracker -->
+            <div class="algo-interactive-tracker">
+              <div class="tracker-header">
+                <h3>ALGORITHM STEP-BY-STEP EXECUTION TRACKER</h3>
+                <span class="tracker-status">LIVE THREAT ENGINE SYNCED</span>
+              </div>
+              <div class="flowchart-steps-list">
+                <div class="flow-step done"><span class="step-num">01</span><div class="step-cnt"><b>Start &bull; Vessel Registration / Login</b><span>Ship ID, User Authentication, MMSI 316001234 initialized.</span></div><span class="step-status">VERIFIED</span></div>
+                <div class="flow-step done"><span class="step-num">02</span><div class="step-cnt"><b>Acquire Real-Time Data</b><span>Streaming AIS/GNSS kinematics, Sentinel-1 SAR, Weather forecasts.</span></div><span class="step-status">STREAMING</span></div>
+                <div class="flow-step done"><span class="step-num">03</span><div class="step-cnt"><b>Preprocess Data</b><span>Cleaning, speckle filtering, normalizations, 75x75 tiling, time windowing.</span></div><span class="step-status">OPTIMAL</span></div>
+                <div class="flow-step done"><span class="step-num">04</span><div class="step-cnt"><b>AI-Based Hazard Detection and Prediction</b><span>PyTorch CNN iceberg classifier (P=0.984) + LSTM cyclone trajectory forecast.</span></div><span class="step-status">COMPUTED</span></div>
+                <div class="flow-step done"><span class="step-num">05</span><div class="step-cnt"><b>Calculate Risk Parameters</b><span>Haversine distance (18.4 NM), CPA (6.2 NM), TCPA (1.15 hours).</span></div><span class="step-status">EVALUATED</span></div>
+                <div class="flow-step done"><span class="step-num">06</span><div class="step-cnt"><b>Multi-Hazard Risk Assessment</b><span>Fusion: R_total = alpha*R_I + beta*R_C + gamma*R_cyber.</span></div><span class="step-status">ACTIVE</span></div>
+                <div class="flow-step done"><span class="step-num">07</span><div class="step-cnt"><b>Risk Level Classification</b><span>Threshold evaluation: Evaluated as HIGH RISK due to cyclone gale cone proximity.</span></div><span class="step-status">HIGH RISK</span></div>
+                <div class="flow-step decision"><span class="step-num">08</span><div class="step-cnt"><b>Decision Diamond: High Risk Detected?</b><span>YES &rarr; Initiates emergency deflection and alert broadcast.</span></div><span class="step-status">BRANCH: YES</span></div>
+                <div class="flow-step alert"><span class="step-num">09</span><div class="step-cnt"><b>Generate Alert &amp; Recalculate Safe Route</b><span>Audible bridge alert sent + Dynamic A* deflects route +45 NM around cyclone.</span></div><span class="step-status">ENGAGED</span></div>
+                <div class="flow-step done"><span class="step-num">10</span><div class="step-cnt"><b>Continuous Monitoring Loop</b><span>Updates MarineChain ledger via PoAh and loops back for next time-step.</span></div><span class="step-status">RUNNING</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 3: SIDE BY SIDE BLUEPRINT MODE -->
+      <div id="patentFigBothView" class="patent-view-container" style="display:none;">
+        <div class="blueprint-split-grid">
+          <div class="blueprint-column">
+            <div class="fig-label">
+              <span class="fig-num">FIGURE 1</span>
+              <span class="fig-sub">System Architecture &amp; Operational Theater</span>
+            </div>
+            <div class="patent-image-frame" onclick="window.openPatentLightbox('assets/images/maritime patent image1.png', 'Patent Specification FIG. 1', 'Figure 1 Master Diagram')">
+              <img src="assets/images/maritime patent image1.png" alt="Figure 1" class="patent-full-image">
+            </div>
+          </div>
+          <div class="blueprint-column">
+            <div class="fig-label">
+              <span class="fig-num">FIGURE 2</span>
+              <span class="fig-sub">Process Flowchart &amp; Decision Algorithm</span>
+            </div>
+            <div class="patent-image-frame" onclick="window.openPatentLightbox('assets/images/maritime patent algorithm.png', 'Patent Specification FIG. 2', 'Figure 2 Algorithm')">
+              <img src="assets/images/maritime patent algorithm.png" alt="Figure 2" class="patent-full-image">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       SECTION 1: MULTIMODAL FUSION ARCHITECTURE (SECTIONS 1, 4, 5, 20)
+       ========================================================================== -->
+  <section id="pipeline" class="project-section alt-bg">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-subtitle-tag">01 // MULTIMODAL SYSTEM PIPELINE</span>
+        <h2 class="section-title">MULTIMODAL FUSION & <span class="cyan">DUAL-LOOP ARCHITECTURE</span></h2>
+        <p class="section-desc">
+          Per Section 4 & 5 of the specification: cyclones are not treated as a 3rd image class. Instead, three distinct sensor streams fuse into an edge threat engine, separating the rapid onboard safety loop from blockchain latency.
+        </p>
+      </div>
+
+      <!-- 4-Branch Architecture Grid -->
+      <div class="multimodal-grid">
+        <div class="branch-card">
+          <span class="branch-tag sar">BRANCH 1: SAR RADAR</span>
+          <span class="branch-title">Iceberg Classification</span>
+          <div class="branch-math">
+            X_SAR = [HH, HV, Avg]<br>
+            P_I = P(iceberg | X_SAR)
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);line-height:1.5;">
+            PyTorch CNN models extract specular backscatter and depolarization across 75×75 C-band tiles to output calibrated iceberg probabilities.
+          </p>
+        </div>
+
+        <div class="branch-card">
+          <span class="branch-tag weather">BRANCH 2: WEATHER</span>
+          <span class="branch-title">Cyclone Sequence Track</span>
+          <div class="branch-math">
+            C_t = [Lat, Lon, Wind, Pres]<br>
+            C_hat_(t+1:t+H) = f(C_(t-k:t))
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);line-height:1.5;">
+            Meteorological observation history feeds sequence models (LSTM / Transformer) to forecast cyclone track evolution and gale radii.
+          </p>
+        </div>
+
+        <div class="branch-card">
+          <span class="branch-tag nav">BRANCH 3: NAVIGATION</span>
+          <span class="branch-title">Ship Kinematics</span>
+          <div class="branch-math">
+            S_t = [Lat, Lon, SOG, COG, Heading, time_t]
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);line-height:1.5;">
+            Streaming GNSS/AIS telemetry replayed continuously to maintain dead-reckoning trajectory and course over ground.
+          </p>
+        </div>
+
+        <div class="branch-card">
+          <span class="branch-tag fusion">BRANCH 4: FUSION ENGINE</span>
+          <span class="branch-title">Threat Assessment & Routing</span>
+          <div class="branch-math">
+            R_total = α·R_I + β·R_C + γ·R_cyb<br>
+            Route* = argmin Cost(e)
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);line-height:1.5;">
+            Calculates Haversine CPA/TCPA, issues immediate bridge alerts, and dynamically bends Great-Circle routes via spherical A*.
+          </p>
+        </div>
+      </div>
+
+      <!-- Fast Safety Loop vs Trusted Communication Loop -->
+      <div class="glass-panel" style="border-left: 3px solid var(--emerald-safe);">
+        <h3 style="font-family:var(--font-tactical);font-size:0.95rem;color:#ffffff;margin-bottom:8px;">
+          KEY DESIGN DECISION: DECOUPLED DUAL-LOOP ARCHITECTURE (SECTION 5 & 14)
+        </h3>
+        <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6;">
+          <b>Fast Onboard Safety Loop (&lt;18 ms):</b> Sensors → Edge AI → Threat Engine → Local Bridge Alert & Dynamic Safe Route. Runs locally with zero dependency on network connection or blockchain mining delays.<br>
+          <b>Trusted Communication Loop:</b> Threat Result → HAPS/Satellite → Proof-of-Authentication (PoAh) → MarineChain Ledger → Maritime Fleet Control Station. Authenticates, records, and provides immutable audit trails.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       SECTION 2: SAR RADAR STUDIO & STATOIL CLASSIFIER (SECTIONS 3.3, 7)
+       ========================================================================== -->
+  <section id="sar-ai" class="project-section">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-subtitle-tag">02 // SATELLITE RADAR CLASSIFIER</span>
+        <h2 class="section-title">STATOIL / C-CORE <span class="cyan">SAR RADAR</span> STUDIO</h2>
+        <p class="section-desc">
+          Per Section 3.3 & 7: 75×75 dual-polarization imagery ($X = [HH, HV, \text{average}]$) evaluated with PyTorch CNN backbones to compute $P_I = P(\text{iceberg} \mid X_{\text{SAR}})$.
+        </p>
+      </div>
+
+      <div class="sar-studio-grid">
+        <!-- Left: Target Selector -->
+        <div class="glass-panel sar-selector-panel">
+          <div class="panel-header-tactical">
+            <h3>TARGET LIBRARY</h3>
+            <div class="filter-pills">
+              <button class="filter-btn active" data-filter="all">ALL</button>
+              <button class="filter-btn" data-filter="iceberg">ICEBERGS</button>
+              <button class="filter-btn" data-filter="vessel">VESSELS</button>
+            </div>
+          </div>
+
+          <div id="sampleListContainer" class="sample-list"></div>
+
+          <!-- Synthetic Parameter Sliders -->
+          <div style="border-top:1px solid var(--border-subtle);padding-top:14px;">
+            <div class="panel-header-tactical" style="margin-bottom:10px;">
+              <h3>RADAR LAB ADJUSTMENTS</h3>
+            </div>
+            <div class="synth-controls">
+              <div class="slider-group">
+                <div class="slider-label">
+                  <span>Incidence Angle (θ)</span>
+                  <span id="incAngleVal" class="val">39.2°</span>
+                </div>
+                <input type="range" id="incAngleSlider" class="tactical-slider" min="30" max="46" step="0.5" value="39.2">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-label">
+                  <span>Sea Clutter Noise</span>
+                  <span id="clutterVal" class="val">-28.0 dB</span>
+                </div>
+                <input type="range" id="clutterSlider" class="tactical-slider" min="-35" max="-20" step="0.5" value="-28.0">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-label">
+                  <span>Target Intensity Core</span>
+                  <span id="targetIntensityVal" class="val">-8.0 dB</span>
+                </div>
+                <input type="range" id="targetIntensitySlider" class="tactical-slider" min="-18" max="0" step="0.5" value="-8.0">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center: Canvases -->
+        <div class="glass-panel sar-main-visualizer">
+          <div class="panel-header-tactical">
+            <h3>DUAL-POLARIZATION CHANNELS</h3>
+            <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--cyan-primary);">75×75 PIXELS (5,625 FLOATS)</span>
+          </div>
+
+          <div class="sar-canvas-row">
+            <div class="sar-view-box">
+              <span class="sar-view-label">BAND 1 (HH POLARIZATION)</span>
+              <div class="canvas-frame-75">
+                <canvas id="canvasBand1" width="75" height="75"></canvas>
+                <div class="crosshair-reticle"></div>
+              </div>
+              <div class="sar-view-stats"><span>Specular Peaks</span><span>Horiz-Horiz</span></div>
+            </div>
+
+            <div class="sar-view-box">
+              <span class="sar-view-label">BAND 2 (HV CROSS-POL)</span>
+              <div class="canvas-frame-75">
+                <canvas id="canvasBand2" width="75" height="75"></canvas>
+                <div class="crosshair-reticle"></div>
+              </div>
+              <div class="sar-view-stats"><span>Depolarization</span><span>Horiz-Vert</span></div>
+            </div>
+
+            <div class="sar-view-box">
+              <span class="sar-view-label">RGB FALSE-COLOR COMPOSITE</span>
+              <div class="canvas-frame-75">
+                <canvas id="canvasComposite" width="75" height="75"></canvas>
+                <div class="crosshair-reticle"></div>
+              </div>
+              <div class="sar-view-stats"><span>R:HH | G:HV</span><span>B:Average</span></div>
+            </div>
+          </div>
+
+          <!-- 3D Surface Topography -->
+          <div class="sar-3d-box">
+            <span class="box-title-overlay">3D RADAR CROSS-SECTION (RCS) TOPOGRAPHY</span>
+            <canvas id="canvas3dSurface"></canvas>
+          </div>
+        </div>
+
+        <!-- Right: Neural Inference Gauge -->
+        <div class="glass-panel sar-ai-result-panel">
+          <div class="panel-header-tactical">
+            <h3>PYTORCH CNN INFERENCE</h3>
+            <span style="font-family:var(--font-mono);font-size:0.68rem;color:var(--emerald-safe);">WEIGHTS: BEST_CUSTOM_CNN</span>
+          </div>
+
+          <div class="pred-gauge-card">
+            <span class="gauge-label">CLASSIFICATION OUTPUT P_I</span>
+            <div id="predHeadline" class="pred-headline iceberg">ICEBERG (98.4%)</div>
+
+            <div class="probability-bar-wrapper">
+              <div class="prob-meter-labels">
+                <span>P(VESSEL): <b id="probVesVal">1.6%</b></span>
+                <span>P(ICEBERG): <b id="probIceVal">98.4%</b></span>
+              </div>
+              <div class="prob-track">
+                <div id="gaugeFill" class="prob-fill iceberg"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="terminal-telemetry-grid">
+            <div class="telem-cell">
+              <span class="key">PEAK BACKSCATTER</span>
+              <span id="rcsPeakVal" class="val cyan">-12.5 dB</span>
+            </div>
+            <div class="telem-cell">
+              <span class="key">CROSS-POL RATIO</span>
+              <span id="crossPolVal" class="val">0.78</span>
+            </div>
+            <div class="telem-cell">
+              <span class="key">MODEL ARCHITECTURE</span>
+              <span class="val">CUSTOM CNN</span>
+            </div>
+            <div class="telem-cell">
+              <span class="key">LOG LOSS VALUE</span>
+              <span class="val emerald">0.2995</span>
+            </div>
+          </div>
+
+          <div class="physics-explanation">
+            <span style="font-family:var(--font-tactical);font-size:0.72rem;color:var(--cyan-primary);display:block;margin-bottom:4px;">PHYSICAL SCATTERING ATTRIBUTION</span>
+            <p id="physicsExpText">
+              <b>Diffuse Volume Scattering:</b> Target displays non-specular cross-polarization and diffuse perimeter backscatter. Lacks the severe metallic corner reflector spike characteristic of vessels.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       SECTION 3: REAL-TIME THREAT MONITOR & CYCLONE TRACKING (SECTIONS 6, 8, 9, 10, 12)
+       ========================================================================== -->
+  <section id="threat-hud" class="project-section alt-bg">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-subtitle-tag">03 // REAL-TIME THREAT MONITOR</span>
+        <h2 class="section-title">CPA/TCPA ENCOUNTER GEOMETRY & <span class="cyan">RISK ENGINE</span></h2>
+        <p class="section-desc">
+          Implementing Section 9, 10 & 12 of the specification: Haversine distance tracking, Closest Point of Approach ($D_{\text{CPA}}$), Time to CPA ($T_{\text{CPA}}$), and multi-hazard risk indicators.
+        </p>
+      </div>
+
+      <!-- Exact Section 9 & 10 Mathematical Formulation Card -->
+      <div class="math-spec-card">
+        <div class="math-title-sm">MATHEMATICAL FORMULATIONS (SECTIONS 9 & 10)</div>
+        <div class="equation-block">
+          • Haversine Distance: d = 2R · arcsin( √( sin²(Δφ/2) + cos(φ_s)·cos(φ_h)·sin²(Δλ/2) ) )<br>
+          • Distance at horizon h: D_h = distance( Ŝ_(t+h), Ĉ_(t+h) )<br>
+          • CPA &amp; TCPA: D_CPA = min_h D_h &nbsp;|&nbsp; T_CPA = argmin_h D_h<br>
+          • Hazard Indicators: R_I = f(P_iceberg, Dist_I, CPA_I, TCPA_I) &nbsp;|&nbsp; R_C = f(Wind, Pres, Dist_C, CPA_C, TCPA_C)<br>
+          • Combined Research Score: R_total = α·R_iceberg + β·R_cyclone + γ·R_cyber
+        </div>
+
+        <!-- Interactive Risk Weights Tuner -->
+        <div class="weights-tuning-deck">
+          <div class="slider-group">
+            <div class="slider-label">
+              <span>α (Iceberg Weight)</span>
+              <span id="valAlphaRisk" class="val">0.40</span>
+            </div>
+            <input type="range" id="sliderAlphaRisk" class="tactical-slider" min="0" max="1" step="0.05" value="0.40">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-label">
+              <span>β (Cyclone Weight)</span>
+              <span id="valBetaRisk" class="val">0.40</span>
+            </div>
+            <input type="range" id="sliderBetaRisk" class="tactical-slider" min="0" max="1" step="0.05" value="0.40">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-label">
+              <span>γ (Cyber Risk Weight)</span>
+              <span id="valGammaRisk" class="val">0.20</span>
+            </div>
+            <input type="range" id="sliderGammaRisk" class="tactical-slider" min="0" max="1" step="0.05" value="0.20">
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--border-subtle);font-family:var(--font-mono);font-size:0.8rem;">
+          <span>CALCULATED COMBINED RISK (R_total): <b id="calculatedRTotal" style="color:var(--amber-warn);font-size:1.05rem;">0.612</b></span>
+          <span>ML TRUST SCORE (TS_i^ML): <b id="calculatedTSML" style="color:var(--emerald-safe);font-size:1.05rem;">0.945</b></span>
+        </div>
+      </div>
+
+      <!-- Real-Time Threat Dashboard HUD (Matching Section 12 Specification) -->
+      <div class="voyage-dashboard">
+        <div class="voyage-control-strip">
+          <div class="voyage-ports-select">
+            <div class="port-input-box">
+              <label>DEPARTURE (SOURCE)</label>
+              <select id="sourcePortSelect" class="tactical-select"></select>
+            </div>
+            <button id="swapPortsBtn" class="swap-btn" title="Swap Route Direction">⇄</button>
+            <div class="port-input-box">
+              <label>DESTINATION (ARRIVAL)</label>
+              <select id="destPortSelect" class="tactical-select"></select>
+            </div>
+            <div class="port-input-box">
+              <label>QUICK VOYAGE PRESETS</label>
+              <select id="quickPresetSelect" class="tactical-select">
+                <option value="CA_STJ->NL_RTM">St. John's → Rotterdam (2,176 NM / ~5.5 Days - Core Iceberg Run)</option>
+                <option value="US_NYC->UK_SOU">New York → Southampton (2,975 NM / ~7.5 Days - Transatlantic Express)</option>
+                <option value="GL_NUU->IS_RVK">Nuuk → Reykjavik (771 NM / ~1.9 Days - High Arctic Ice Transit)</option>
+                <option value="NO_SVG->NL_RTM">Stavanger → Rotterdam (365 NM / ~0.9 Days - North Sea Energy)</option>
+                <option value="CA_HAL->UK_LIV">Halifax → Liverpool (2,480 NM / ~6.3 Days - Western Approaches Freight)</option>
+                <option value="CA_STJ->OFF_FLE">St. John's → Flemish Pass Rig (310 NM / ~18 hrs - Offshore Exploration)</option>
+                <option value="US_BOS->IS_RVK">Boston → Reykjavik (2,010 NM / ~5.1 Days - Sub-Polar Transit)</option>
+                <option value="NO_BGO->NO_TOS">Bergen → Tromsø (640 NM / ~1.6 Days - Norwegian Arctic Run)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="voyage-metrics-ticker">
+            <div class="metric-pill"><span class="lbl">TOTAL DISTANCE</span><span id="totalDistVal" class="val">2,176 NM</span></div>
+            <div class="metric-pill"><span class="lbl">DISTANCE REMAINING</span><span id="remDistVal" class="val">2,176 NM</span></div>
+            <div class="metric-pill"><span class="lbl">ESTIMATED ETA</span><span id="etaDaysVal" class="val">5.5 Days</span></div>
+          </div>
+
+          <div class="sim-controls-group">
+            <button id="simPlayBtn" class="sim-btn">Play</button>
+            <button id="simStepBtn" class="sim-btn">Step (+0.5h)</button>
+            <button id="simResetBtn" class="sim-btn">Reset</button>
+            <div style="display:flex;gap:4px;margin-left:8px;">
+              <button class="sim-btn speed-btn active" data-speed="1">1x</button>
+              <button class="sim-btn speed-btn" data-speed="2">2x</button>
+              <button class="sim-btn speed-btn" data-speed="5">5x</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map & Monitor Layout -->
+        <div class="simulator-layout">
+          <div class="map-wrapper-card">
+            <div id="nauticalMap"></div>
+            <div class="map-hud-overlay">
+              <span class="hud-vessel-name">REAL-TIME MONITORING DASHBOARD &bull; MV ARCTIC SENTINEL</span>
+              <span class="hud-vessel-stats">SOG: 16.5 kts | COG: 068° | TIME: <b id="simHourVal">+0.0h</b></span>
+            </div>
+            <div class="map-legend-overlay patent-legend">
+              <div class="patent-legend-header">LEAFLET TACTICAL HUD &bull; FIG. 1 LEGEND</div>
+              <div class="legend-tag"><span class="legend-icon">🚢</span><span>Vessel (Moving)</span></div>
+              <div class="legend-tag"><span class="legend-icon">🧊</span><span>Iceberg (Detected SAR+AI)</span></div>
+              <div class="legend-tag"><span class="legend-icon">🌀</span><span>Cyclone (Predicted Track)</span></div>
+              <div class="legend-tag"><div class="legend-line nominal-green"></div><span>Nominal Route (Green Dashed)</span></div>
+              <div class="legend-tag"><div class="legend-line safe-red"></div><span>Safe Route (A* Red Solid)</span></div>
+              <div class="legend-tag"><div class="legend-area hazard-red"></div><span>Hazard Region (Cyclone / Ice)</span></div>
+            </div>
+          </div>
+
+          <div class="sim-sidebar">
+            <div class="threat-state-card">
+              <div class="threat-status-header">
+                <span class="card-title-sm">SECTION 12 THREAT MONITOR</span>
+                <span id="overallThreatHeadline" class="threat-score-headline safe">LOW RISK</span>
+              </div>
+              <div class="terminal-telemetry-grid">
+                <div class="telem-cell">
+                  <span class="key">CYCLONE CPA (D_CPA)</span>
+                  <span id="cpaCycloneVal" class="val crimson">82.5 NM</span>
+                </div>
+                <div class="telem-cell">
+                  <span class="key">TIME TO CPA (T_CPA)</span>
+                  <span id="tcpaVal" class="val">14.2 h</span>
+                </div>
+                <div class="telem-cell">
+                  <span class="key">ICEBERG PROB (P_I)</span>
+                  <span class="val amber">0.984 [ICE-7801]</span>
+                </div>
+                <div class="telem-cell">
+                  <span class="key">WIND SPEED / PRES</span>
+                  <span class="val">85 kts | 958 hPa</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cyberattack Injection Deck (Section 15) -->
+            <div class="cyber-injection-deck">
+              <div class="deck-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>SECTION 15 CYBERATTACK INJECTION</span>
+              </div>
+              <div class="cyber-btn-grid">
+                <button id="btnInjectSpoof" class="cyber-toggle-btn">
+                  <span>GPS SPOOF: Lat' = Lat + 0.85°</span>
+                  <span class="cyber-badge-status">ARMED</span>
+                </button>
+                <button id="btnInjectWind" class="cyber-toggle-btn">
+                  <span>WIND SCALE: Wind' = 1.95·Wind</span>
+                  <span class="cyber-badge-status">ARMED</span>
+                </button>
+                <button id="btnInjectReplay" class="cyber-toggle-btn">
+                  <span>TELEMETRY REPLAY ATTACK</span>
+                  <span class="cyber-badge-status">ARMED</span>
+                </button>
+                <button id="btnClearCyber" class="cyber-toggle-btn" style="border-color:rgba(255,255,255,0.15);">
+                  <span>DISARM / RESTORE TELEMETRY</span>
+                  <span class="cyber-badge-status">RESET</span>
+                </button>
+              </div>
+
+              <div style="background:rgba(0,0,0,0.4);border-radius:6px;padding:10px;font-family:var(--font-mono);font-size:0.68rem;display:flex;flex-direction:column;gap:3px;">
+                <span style="color:var(--text-muted);">KALMAN ANOMALY GATE:</span>
+                <span id="kalmanStatusText" style="color:var(--emerald-safe);font-weight:700;">GPS / SENSOR NOMINAL</span>
+                <span id="anomalyScoreText" style="color:var(--text-dim);">χ² = 0.12 (SECURE)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Tracked Entities Strip (Ship, Cyclone, Iceberg) -->
+        <div class="live-entities-dashboard-bar">
+          <!-- Live Ship Entity Card -->
+          <div class="entity-live-card ship">
+            <div class="entity-header ship">
+              <span>● LIVE SHIP [S_t]</span>
+              <span id="liveShipBadge" style="color:var(--emerald-safe);font-size:0.65rem;">UNDERWAY</span>
+            </div>
+            <div class="entity-telemetry-text">
+              <b>Vessel:</b> MV ARCTIC SENTINEL [MMSI 316001234]<br>
+              <b>Position:</b> <span id="liveShipPosText">47.56°N, 52.71°W</span><br>
+              <b>Kinematics:</b> <span id="liveShipKinText">SOG 16.5 kts | COG 068° | Heading 068°</span><br>
+              <b>Corridor:</b> <span id="liveShipCorridorText">St. John's → Rotterdam (Active A* Route)</span>
+            </div>
+          </div>
+
+          <!-- Live Cyclone Entity Card -->
+          <div class="entity-live-card cyclone">
+            <div class="entity-header cyclone">
+              <span>● LIVE CYCLONE [C_t]</span>
+              <span style="color:var(--crimson-danger);font-size:0.65rem;">CATEGORY 3 GALE</span>
+            </div>
+            <div class="entity-telemetry-text">
+              <b>Storm:</b> Cyclone Boreal Tempest<br>
+              <b>Eye Position:</b> <span id="liveCyclonePosText">44.50°N, 51.00°W</span><br>
+              <b>Winds / Pressure:</b> <span id="liveCycloneWindsText">85 kts sustained (110 kts gusts) | 958 hPa</span><br>
+              <b>Forecast Track:</b> <span id="liveCycloneForecastText">Moving NE at 18 kts (Bearing 042°)</span>
+            </div>
+          </div>
+
+          <!-- Live Iceberg Entity Card -->
+          <div class="entity-live-card iceberg">
+            <div class="entity-header iceberg">
+              <span>● LIVE ICEBERGS [I_t]</span>
+              <span style="color:var(--amber-warn);font-size:0.65rem;">3 SECTOR TARGETS</span>
+            </div>
+            <div class="entity-telemetry-text">
+              <b>Nearest Target:</b> <span id="liveIcebergIdText">ICE-7801 [P(Ice)=0.984]</span><br>
+              <b>Drift Dynamics:</b> <span id="liveIcebergDriftText">1.2 kts @ 165° (Labrador Current)</span><br>
+              <b>Closest Encounter:</b> <span id="liveIcebergCpaText">Distance 18.4 NM | CPA 6.2 NM in 1.1h</span><br>
+              <b>SAR Radar Link:</b> <a href="#sar-ai" style="color:var(--amber-warn);text-decoration:underline;">Inspect 75×75 SAR Tile in Studio 🔬</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       SECTION 4: DYNAMIC ROUTE PLANNING (SECTION 11)
+       ========================================================================== -->
+  <section id="routing" class="project-section">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-subtitle-tag">04 // DYNAMIC PATH OPTIMIZATION</span>
+        <h2 class="section-title">A* DYNAMIC <span class="cyan">WEATHER ROUTE PLANNING</span></h2>
+        <p class="section-desc">
+          Per Section 11 of the specification: Graph optimization $G = (V, E)$ dynamically recalculating paths whenever hazard forecasts materially change.
+        </p>
+      </div>
+
+      <div class="math-spec-card">
+        <div class="math-title-sm">GRAPH OPTIMIZATION COST FUNCTION (SECTION 11)</div>
+        <div class="equation-block">
+          Cost(e) = α·Distance(e) + β·IcebergRisk(e) + γ·CycloneRisk(e) + δ·WeatherRisk(e)<br>
+          Route* = argmin_R ∑_{e ∈ R} Cost(e)
+        </div>
+      </div>
+
+      <div class="charts-gallery-grid">
+        <div class="glass-panel">
+          <h3 style="font-family:var(--font-tactical);font-size:0.95rem;color:var(--cyan-primary);margin-bottom:8px;">SPHERICAL GREAT-CIRCLE RECALCULATION</h3>
+          <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6;">
+            Initial nominal tracks are projected as spherical geodesics. Waypoints are evaluated every 30 NM along the transatlantic corridor against moving cyclone gale envelopes.
+          </p>
+        </div>
+        <div class="glass-panel">
+          <h3 style="font-family:var(--font-tactical);font-size:0.95rem;color:var(--emerald-safe);margin-bottom:8px;">+45 NM SAFETY CLEARANCE BUFFER</h3>
+          <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6;">
+            Whenever the predicted distance $D_h &lt; R_{\text{gale}} + 45\text{ NM}$, the cost penalty increases exponentially, deflecting the vessel northwards while preserving fuel efficiency.
+          </p>
+        </div>
+        <div class="glass-panel">
+          <h3 style="font-family:var(--font-tactical);font-size:0.95rem;color:var(--purple-cyber);margin-bottom:8px;">DRIFTING ICEBERG AVOIDANCE</h3>
+          <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6;">
+            Iceberg state vectors $I_t = [\text{Lat}_i, \text{Lon}_i, V_i, \theta_i]$ predict southward Labrador Current drift, guaranteeing minimum passing distances above 18 NM.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       SECTION 5: MARINECHAIN / POAH & HAZARD SCHEMA (SECTIONS 2, 14, 15)
+       ========================================================================== -->
+  <section id="marinechain" class="project-section alt-bg">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-subtitle-tag">05 // CYBER-RESILIENT BLOCKCHAIN</span>
+        <h2 class="section-title">MARINECHAIN / POAH & <span class="cyan">HAZARD MESSAGE SCHEMA</span></h2>
+        <p class="section-desc">
+          Implementing Section 2, 14 & 15: ML-assisted trust score calculation ($TS_i^{ML}$), Proof-of-Authentication (PoAh) consensus, and standardized hazard message transmission.
+        </p>
+      </div>
+
+      <div class="math-spec-card">
+        <div class="math-title-sm">ML-ASSISTED TRUST SCORE (SECTION 2.3)</div>
+        <div class="equation-block">
+          TS_i = VB_i + ST_i - MV_i<br>
+          p_i = P(malicious | x_i)<br>
+          TS_i^ML = α·TS_i + (1 - α)·(1 - p_i)
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-top:10px;">
+          The ML probability supplements, rather than replaces, the deterministic PoAh trust logic, preventing adversarial takeover while filtering compromised sensor nodes.
+        </p>
+      </div>
+
+      <div class="blockchain-explorer-grid">
+        <!-- Left: Hazard Message Schema Inspector (Section 14) -->
+        <div class="schema-inspector-card">
+          <div class="panel-header-tactical">
+            <h3>SECTION 14 HAZARD MESSAGE SCHEMA</h3>
+            <button id="btnRefreshSchema" class="sim-btn" style="padding:3px 8px;">Re-sign Message</button>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-dim);">
+            Standardized hazard payload transmitted from HAPS / Satellite to Control Center:
+          </p>
+          <pre id="hazardSchemaJsonBox" class="schema-json-box"></pre>
+        </div>
+
+        <!-- Right: MarineChain Live Verified Blocks -->
+        <div class="glass-panel ledger-feed-card">
+          <div class="panel-header-tactical">
+            <h3>MARINECHAIN VERIFIED BLOCKS</h3>
+            <span style="font-family:var(--font-mono);font-size:0.68rem;color:var(--emerald-safe);">CONSENSUS: PROOF-OF-AUTHENTICATION</span>
+          </div>
+          <div id="blockchainFeedContainer" class="ledger-chain-feed"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       SECTION 6: DEEP LEARNING MODEL BENCHMARK SUITE (SECTION 3.3)
+       ========================================================================== -->
+  <section id="benchmarks" class="project-section">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-subtitle-tag">06 // MODEL BENCHMARKS</span>
+        <h2 class="section-title">DEEP LEARNING MODEL <span class="cyan">LEADERBOARD</span></h2>
+        <p class="section-desc">
+          Per Section 3.3 & results_comparison.md: Comparative evaluation across 6 architectures under common validation protocols.
+        </p>
+      </div>
+
+      <div class="benchmark-table-wrapper">
+        <table class="table-tactical">
+          <thead>
+            <tr>
+              <th>MODEL ARCHITECTURE</th>
+              <th>ACCURACY</th>
+              <th>PRECISION</th>
+              <th>RECALL</th>
+              <th>F1-SCORE</th>
+              <th>ROC-AUC</th>
+              <th>LOG LOSS</th>
+              <th>PARAMETERS</th>
+              <th>TRAIN TIME</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="winner-row">
+              <td><b>Custom CNN</b> <span class="badge-winner">TOP PERFORMER</span></td>
+              <td style="color:var(--cyan-primary);">86.29%</td>
+              <td>0.8204</td>
+              <td>0.9073</td>
+              <td>0.8616</td>
+              <td style="color:var(--emerald-safe);">0.9500</td>
+              <td style="color:var(--emerald-safe);">0.2995</td>
+              <td>240,513</td>
+              <td>342.5 s</td>
+            </tr>
+            <tr>
+              <td><b>DenseNet121</b></td>
+              <td>85.67%</td>
+              <td>0.8832</td>
+              <td>0.8013</td>
+              <td>0.8403</td>
+              <td>0.9456</td>
+              <td>0.3013</td>
+              <td>6,954,881</td>
+              <td>827.8 s</td>
+            </tr>
+            <tr>
+              <td><b>ResNet50</b></td>
+              <td>83.49%</td>
+              <td>0.8311</td>
+              <td>0.8146</td>
+              <td>0.8227</td>
+              <td>0.9366</td>
+              <td>0.3121</td>
+              <td>23,510,081</td>
+              <td>920.4 s</td>
+            </tr>
+            <tr>
+              <td><b>EfficientNetB0</b></td>
+              <td>80.37%</td>
+              <td>0.7716</td>
+              <td>0.8278</td>
+              <td>0.7987</td>
+              <td>0.8903</td>
+              <td>0.4135</td>
+              <td>4,008,829</td>
+              <td>452.1 s</td>
+            </tr>
+            <tr>
+              <td><b>MobileNetV2</b></td>
+              <td>76.95%</td>
+              <td>0.7391</td>
+              <td>0.7881</td>
+              <td>0.7628</td>
+              <td>0.8600</td>
+              <td>0.4695</td>
+              <td>2,225,153</td>
+              <td>317.7 s</td>
+            </tr>
+            <tr>
+              <td><b>ResNet50 + DenseNet121 + Dual Attention</b></td>
+              <td>77.26%</td>
+              <td>0.7868</td>
+              <td>0.7086</td>
+              <td>0.7456</td>
+              <td>0.8823</td>
+              <td>0.4168</td>
+              <td>36,226,193</td>
+              <td>869.7 s</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Research Plots Gallery -->
+      <div class="charts-gallery-grid">
+        <div class="chart-card">
+          <div class="chart-thumb-frame">
+            <img src="assets/images/results_comparison_dashboard.png" alt="Model Comparison Dashboard">
+            <div class="zoom-overlay"><span class="zoom-btn">View High-Res</span></div>
+          </div>
+          <div class="chart-meta-box">
+            <span class="chart-meta-title">Comparative Performance Dashboard</span>
+            <span class="chart-meta-desc">Comprehensive accuracy, log loss, and parameter efficiency comparison.</span>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-thumb-frame">
+            <img src="assets/images/roc_curves.png" alt="ROC Curves">
+            <div class="zoom-overlay"><span class="zoom-btn">View High-Res</span></div>
+          </div>
+          <div class="chart-meta-box">
+            <span class="chart-meta-title">Receiver Operating Characteristic (ROC)</span>
+            <span class="chart-meta-desc">ROC curves highlighting Custom CNN reaching 0.9500 Area Under Curve.</span>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-thumb-frame">
+            <img src="assets/images/confusion_matrices.png" alt="Confusion Matrices">
+            <div class="zoom-overlay"><span class="zoom-btn">View High-Res</span></div>
+          </div>
+          <div class="chart-meta-box">
+            <span class="chart-meta-title">Confusion Matrices</span>
+            <span class="chart-meta-desc">Normalized True Positives, False Positives, and False Negatives breakdown.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       SECTION 7: IMPLEMENTATION ROADMAP & RESEARCH PROGRESSION (SECTIONS 16, 17, 18, 19)
+       ========================================================================== -->
+  <section id="roadmap" class="project-section alt-bg">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-subtitle-tag">07 // IMPLEMENTATION SPECIFICATION</span>
+        <h2 class="section-title">20-STEP BUILD ORDER & <span class="cyan">RESEARCH ROADMAP</span></h2>
+        <p class="section-desc">
+          Tracking the exact 20 implementation steps from Section 16 and the 3-paper research progression defined in Section 18.
+        </p>
+      </div>
+
+      <!-- 3-Paper Academic Progression (Section 18) -->
+      <div class="papers-timeline-grid">
+        <div class="paper-card">
+          <span class="paper-num-badge">PAPER 1</span>
+          <span class="paper-title">Ship-Iceberg SAR Classification</span>
+          <p class="paper-contrib">
+            Evaluates dual-polarization Sentinel-1 radar features, incidence angle dependencies, and backscatter normalization. Compares 6 CNN backbones with Custom CNN achieving 0.2995 log loss.
+          </p>
+        </div>
+
+        <div class="paper-card">
+          <span class="paper-num-badge">PAPER 2</span>
+          <span class="paper-title">Cyclone-Aware Moving-Ship Risk Prediction</span>
+          <p class="paper-contrib">
+            Moves beyond static classification: sequence-based cyclone trajectory forecasting, dynamic Haversine CPA/TCPA calculation, and adaptive weather evasion for moving vessels.
+          </p>
+        </div>
+
+        <div class="paper-card">
+          <span class="paper-num-badge">PAPER 3</span>
+          <span class="paper-title">Multi-Hazard + Cyber-Resilient MarineChain</span>
+          <p class="paper-contrib">
+            Integrates the full cyber-physical platform: sensor spoofing detection, Kalman dead-reckoning reconstruction, ML-assisted PoAh trust scoring, and blockchain auditability.
+          </p>
+        </div>
+      </div>
+
+      <!-- 20-Step Implementation Roadmap Grid (Section 16) -->
+      <div style="margin-top:40px;">
+        <h3 style="font-family:var(--font-tactical);font-size:1.1rem;color:#ffffff;margin-bottom:14px;">
+          SECTION 16: 20-STEP BUILD ORDER CHECKLIST (CLICK TO TOGGLE)
+        </h3>
+        <div class="roadmap-grid">
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 01</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Define outputs: moving ship, iceberg risk, cyclone risk, CPA/TCPA, warning, safe route</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 02</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Create project folders and common data schema</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 03</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Obtain AIS trajectory and replay it as a moving ship</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 04</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Build live map/dashboard and verify continuous ship motion</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 05</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Load and preprocess Statoil/C-CORE SAR data</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 06</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Train 5 ship-vs-iceberg models under same split and preprocessing</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 07</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Evaluate Acc, Prec, Rec, F1, ROC-AUC, Log Loss; select Custom CNN</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 08</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Replay historical cyclone track on same map</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 09</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Calculate real-time ship-to-cyclone distance</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 10</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Predict ship's future motion via constant-course/speed baseline</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 11</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Train LSTM/Transformer for cyclone trajectory prediction</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 12</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Compute cyclone CPA and TCPA geometry</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 13</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Add iceberg tracking simulation and compute iceberg CPA/TCPA</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 14</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Build hazard-specific threat engine (R_I, R_C)</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 15</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Implement Low / Moderate / High experimental warnings</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 16</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Add dynamic A* route planning around evolving hazard zones</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 17</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Connect streaming components via WebSocket / REST APIs</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 18</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Integrate MarineChain/HAPS/PoAh for authenticated messages</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 19</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Inject GPS/weather/message attacks and evaluate cyber resilience</span></div>
+          <div class="step-card completed"><div class="step-header"><span class="step-num">STEP 20</span><span class="step-status-tag">VERIFIED</span></div><span class="step-desc">Run 4-stage ablation studies: AI only vs Full MarineChain</span></div>
+        </div>
+      </div>
+
+      <!-- Important Experimental Cautions (Section 19) -->
+      <div class="cautions-alert-box">
+        <div class="cautions-head">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>SECTION 19: IMPORTANT EXPERIMENTAL CAUTIONS &amp; RIGOR GUIDELINES</span>
+        </div>
+        <ul class="cautions-list">
+          <li>The Statoil/C-CORE dataset is a satellite SAR ship-vs-iceberg classification dataset; it is not a live onboard radar stream.</li>
+          <li>Cyclone prediction requires separate meteorological tracking datasets; synthetic encounters are labelled as simulations.</li>
+          <li>Do not claim real-world safety performance from simulated threat thresholds; thresholds are explicitly experimental.</li>
+          <li>Do not select a model only by accuracy; inspect precision, recall, F1, ROC-AUC, calibration/log loss, and class balance.</li>
+          <li>Keep the immediate onboard warning loop independent of blockchain consensus latency (&lt;18 ms local response).</li>
+          <li>Report inference latency and update rates if claiming real-time operational capability.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       MODAL LIGHTBOX
+       ========================================================================== -->
+  <div id="lightboxModal" class="modal-lightbox">
+    <div class="modal-content-card">
+      <div class="modal-header">
+        <span id="modalTitle" class="modal-title">Inspection View</span>
+        <button id="closeModalBtn" class="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-image-frame">
+        <img id="modalImg" src="" alt="High-Res Inspection">
+      </div>
+      <div id="modalDetailText" style="padding:16px 24px;border-top:1px solid var(--border-subtle);background:rgba(0,0,0,0.5);display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       FOOTER
+       ========================================================================== -->
+  <footer class="project-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="radar-logo" style="width:30px;height:30px;"><div class="radar-core"></div></div>
+          <span style="font-family:var(--font-tactical);font-weight:800;font-size:1rem;color:#ffffff;">MARITIME AI SENTINEL</span>
+          <p class="footer-desc">
+            Implementing the 20-section specification: Moving Ship + Real-Time Sensing + Iceberg AI + Cyclone Prediction + CPA/TCPA + Dynamic Routing + MarineChain.
+          </p>
+        </div>
+        <div class="footer-col">
+          <h4>NAVIGATION</h4>
+          <ul class="footer-links">
+            <li><a href="#pipeline">System Pipeline</a></li>
+            <li><a href="#sar-ai">SAR Radar AI</a></li>
+            <li><a href="#threat-hud">Threat Monitor HUD</a></li>
+            <li><a href="#routing">A* Dynamic Routing</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>RESEARCH</h4>
+          <ul class="footer-links">
+            <li><a href="#marinechain">MarineChain &amp; PoAh</a></li>
+            <li><a href="#benchmarks">Model Benchmarks</a></li>
+            <li><a href="#roadmap">20-Step Build Order</a></li>
+            <li><a href="#roadmap">3-Paper Progression</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>SPECIFICATION</h4>
+          <p style="font-size:0.76rem;color:var(--text-dim);line-height:1.55;">
+            Based on the technical document <i>"Maritime AI Threat Detection for Moving Ships"</i> and the Statoil/C-CORE Kaggle Challenge.
+          </p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 Maritime AI Research Platform. All rights reserved.</span>
+        <span>Fast Safety Loop &lt;18ms • MarineChain PoAh v1.4 • PyTorch v2.1</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

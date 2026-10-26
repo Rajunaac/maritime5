@@ -1,0 +1,21 @@
+# ==============================================================================
+# Docker Build Context Exclusion
+# ==============================================================================
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.pyc
+*.7z
+*.npz
+*.npy
+data/
+**/data/
+*resnet50*
+*densenet121*
+*efficientnet*
+*mobilenet*
+.ipynb_checkpoints
+.system_generated
+*.log
